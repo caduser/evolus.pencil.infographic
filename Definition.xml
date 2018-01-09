@@ -1,0 +1,325 @@
+<Shapes
+    xmlns="http://www.evolus.vn/Namespace/Pencil"
+    xmlns:p="http://www.evolus.vn/Namespace/Pencil"
+    xmlns:svg="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:cc="http://web.resource.org/cc/"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+    id="Pilot"
+    displayName="Pilot Common Shapes"
+    description=""
+    author="smartim"
+    url="">
+    <Properties>
+        <PropertyGroup name="Text">
+            <Property name="defaultTextFont" type="Font" displayName="Default Font">"Liberation Sans",Arial,sans-serif|normal|normal|13px</Property>
+            <Property name="defaultTextColor" type="Color" displayName="Default Text Color">#000000ff</Property>
+        </PropertyGroup>
+        <PropertyGroup name="Border">
+            <Property name="strokeColor" type="Color" displayName="Default Border Color">#1B3280ff</Property>
+            <Property name="strokeStyle" type="StrokeStyle" displayName="Default Border Style">2|</Property>
+        </PropertyGroup>
+        <PropertyGroup name="Background">
+            <Property name="fillColor" type="Color" displayName="Default Background Color">#4388CCff</Property>
+        </PropertyGroup>
+    </Properties>
+    <Script>
+        <![CDATA[
+            collection.VIA_LENGTH = 71;
+		
+			collection.buildSnappingGuides = function (shape) {
+                var box = shape.getProperty("box");
+                return [
+                    new SnappingData("Top", 0, "Top", false, shape.id).makeLocal(true),
+                    new SnappingData("HCenter", box.h / 2, "HCenter", false, shape.id).makeLocal(true),
+                    new SnappingData("Bottom", box.h, "Bottom", false, shape.id).makeLocal(true),
+                    new SnappingData("Left", 0, "Left", true, shape.id).makeLocal(true),
+                    new SnappingData("VCenter", box.w / 2, "VCenter", true, shape.id).makeLocal(true),
+                    new SnappingData("Right", box.w, "Right", true, shape.id).makeLocal(true)
+                    ]
+            };
+
+            collection.buildConnectorOutletsWith = function (box, overridingOutlets) {
+                var definedOutlets = [];
+                var outlets = [];
+                if (overridingOutlets) {
+                    for (var i in overridingOutlets) {
+                        var outlet = overridingOutlets[i];
+                        definedOutlets.push(outlet.id);
+                        if (outlet.classes) outlets.push(outlet);
+                    }
+                }
+
+                var systemOutlets = [
+                    new Outlet("top-left", "FCInput", 0, 0),
+                    new Outlet("top-center", "FCInput", box.w / 2, 0),
+                    new Outlet("top-right", "FCInput", box.w, 0),
+                    new Outlet("middle-left", "FCInput", 0, box.h / 2),
+                    new Outlet("middle-center", "FCInput", box.w / 2, box.h / 2),
+                    new Outlet("middle-right", "FCInput", box.w, box.h / 2),
+                    new Outlet("bottom-left", "FCInput", 0, box.h),
+                    new Outlet("bottom-center", "FCInput", box.w / 2, box.h),
+                    new Outlet("bottom-right", "FCInput", box.w, box.h)
+                ];
+
+                for (var i in systemOutlets) {
+                    var outlet = systemOutlets[i];
+                    stencilDebug("checking: " + outlet.id);
+                    if (definedOutlets.indexOf(outlet.id) >= 0) continue;
+                    stencilDebug("\tadding: " + outlet.id);
+
+                    outlets.push(outlet);
+                }
+
+                return outlets;
+            };
+        ]]>
+    </Script>
+
+    <Shape displayName="Connect Line" icon="Icons/Line.png" id="connectline">
+        <Properties>
+            <PropertyGroup name="Common">
+                <Property displayName="Start" name="startPin" p:connectTo="*" type="Handle">0,0</Property>
+                <Property displayName="End" name="endPin" p:connectTo="*" type="Handle">100,70</Property>
+                <Property name="mode" displayName="Mode" type="Enum" p:enumValues="['straight|Straight', 'multi-straight|Multiple straight segments', 'curvy|Curvy']">curvy</Property>
+            </PropertyGroup>
+            <PropertyGroup name="Border">
+                <Property displayName="Border Color" name="strokeColor" type="Color">#A89A92FF</Property>
+                <Property displayName="Border Style" name="strokeStyle" type="StrokeStyle">
+                    <E>$$strokeStyle</E>
+                </Property>
+            </PropertyGroup>
+            <PropertyGroup name="Text">
+                <Property displayName="Content" name="textContent"
+                    p:editInfo="var targetBox = F.getObjectBoundingBox('text');
+                    var sizeBox = F.textSize('text');
+                    var newBox = new Bound(targetBox.x, targetBox.y + ((sizeBox.h / 2) - 10), Math.sqrt((sizeBox.w * sizeBox.w) + (sizeBox.h * sizeBox.h)) + 10 , 20);
+                    ({targetName: 'text', bound: newBox
+                     , font: $textFont, align: $textAlign, multi: false})" type="PlainText" />
+                <Property displayName="Font" name="textFont" type="Font">
+                    <E>$$defaultTextFont</E>
+                </Property>
+                <Property displayName="Color" name="textColor" type="Color">
+                    <E>$$defaultTextColor</E>
+                </Property>
+                <Property displayName="Align" name="textAlign" type="Alignment">1,1</Property>
+            </PropertyGroup>
+        </Properties>
+        <Behaviors>
+            <For ref="outArrow1">
+                <StrokeColor>$strokeColor</StrokeColor>
+                <StrokeStyle>$strokeStyle</StrokeStyle>
+            </For>
+            <For ref="path">
+                <D><![CDATA[
+                    var startVia = null;
+                    var viaLength = collection.VIA_LENGTH;
+                    if ($startPin.meta && $endPin.meta
+                        && $startPin.meta.connectedShapeId
+                        && $startPin.meta.connectedShapeId == $endPin.meta.connectedShapeId) {
+                        viaLength = collection.VIA_LENGTH * 3;
+                    }
+                    stencilDebug("viaLength: " + viaLength);
+                    if ($startPin.meta && $startPin.meta.viax && $startPin.meta.viay) {
+                        startVia = {x: parseFloat($startPin.meta.viax), y: parseFloat($startPin.meta.viay)};
+                        startVia = geo_getRotatedPoint(startVia, $startPin, viaLength, 0);
+                    } else {
+                        if ($endPin.meta && $endPin.meta.viax && $endPin.meta.viay) {
+                            endVia = {x: parseFloat($endPin.meta.viax), y: parseFloat($endPin.meta.viay)};
+                            var dx = Math.abs($endPin.x - endVia.x);
+                            var dy = Math.abs($endPin.y - endVia.y);
+
+                            startVia = {x: $endPin.x, y: $endPin.y };
+
+                            if (dx > dy) {  //horizontal
+                                startVia.x = $startPin.x;
+                            } else {
+                                startVia.y = $startPin.y;
+                            }
+                            startVia = geo_getRotatedPoint(startVia, $startPin, viaLength, 0);
+                        } else {
+                            startVia = geo_getRotatedPoint($endPin, $startPin, viaLength, 0);
+                        }
+                    }
+
+                    var result = null;
+                    
+                        result = arrowTo([{x: $startPin.x, y: $startPin.y}, startVia], $endPin,
+                                $strokeStyle.w,
+                                viaLength,
+                                "supportUnconnected",
+                                false,
+                                false,
+                                false,
+                                5)
+               
+                ]]></D>
+            </For>
+            <For ref="text">
+                <Color>$textColor</Color>
+                <Font>$textFont</Font>
+            </For>
+            <For ref="textSpan">
+                <InnerText>$textContent</InnerText>
+                <Attr>
+                    <Arg>"dy"</Arg>
+                    <Arg>0 - $textFont.getPixelHeight() / 3</Arg>
+                </Attr>
+                <Attr>
+                    <Arg>"dx"</Arg>
+                    <Arg>
+                        var arrowLength = Math.max($strokeStyle.w * 4, 6) * 2;
+                        var dx = 0;
+                        dx;
+                    </Arg>
+                </Attr>
+            </For>
+        </Behaviors>
+        <Actions>
+            <Action id="getConnectorOutlets">
+                <Impl>
+                    <![CDATA[
+                    	var VIA_LENGTH = 10;
+                        var startPin = this.getProperty("startPin");
+                        var endPin = this.getProperty("endPin");
+                        var outlet = new Outlet("commonSegmentInput", "Input", startPin.x, startPin.y);
+                        outlet.via = geo_getRotatedPoint(endPin, startPin, VIA_LENGTH, Math.PI);
+                        outlet.noVia = true;
+                        return [
+                            //outlet
+                        ]
+                    ]]>
+                </Impl>
+            </Action>
+        </Actions>
+        <p:Content xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <path id="path" style="stroke-linejoin: round; fill: none;" />
+            </defs>
+            <use xlink:href="#path" stroke-width="10" stroke-opacity="0" stroke="#FF0000" />
+            <use xlink:href="#path" id="outArrow1" />
+            <text id="text">
+                <textPath xlink:href="#path" startOffset="50%" text-anchor="middle" alignment-baseline="middle">
+                    <tspan id="textSpan" dy="-5">Text along a curved path</tspan>
+                </textPath>
+            </text>
+        </p:Content>
+    </Shape>
+	
+	<Shape displayName="Connection Point Rhombus" id="connectionPointRhombus" icon="Icons/connectionPointRhombus.png">
+        <Properties>
+            <PropertyGroup name="Background">
+                <Property displayName="Background" name="fillColor" type="Color">#E53D03FF</Property>
+            </PropertyGroup>
+        </Properties>
+        <Behaviors>
+            <For ref="path">
+                <Fill>$fillColor</Fill>
+				<D>
+					var t = 13;				
+					[M(t / 2, 0), L(t, t / 2), L(t / 2, t), L(0, t / 2), z]
+				</D>
+            </For>
+        </Behaviors>
+        <Actions>
+            <Action id="getSnappingGuide">
+                <Impl>return this.def.collection.buildSnappingGuides(this);</Impl>
+            </Action>
+            <Action id="getConnectorOutlets">
+                <Impl>
+                <![CDATA[
+                    var a = 5;
+                    var b = 5;
+
+                    return this.def.collection.buildConnectorOutletsWith(box, [
+                        new Outlet("top-right", "FCInput", a * Math.cos(0 - Math.PI / 4) + a, b * Math.sin( - Math.PI / 4) + b),
+                        new Outlet("top-left", "FCInput", a * Math.cos(0 - 3 * Math.PI / 4) + a, b * Math.sin(0 - 3 * Math.PI / 4) + b),
+                        new Outlet("bottom-right", "FCInput", a * Math.cos(Math.PI / 4) + a, b * Math.sin(Math.PI / 4) + b),
+                        new Outlet("bottom-left", "FCInput", a * Math.cos(3 * Math.PI / 4) + a, b * Math.sin(3 * Math.PI / 4) + b),
+                    ]);
+                ]]>
+                </Impl>
+            </Action>
+        </Actions>
+        <p:Content xmlns="http://www.w3.org/2000/svg">
+            <path id="path" style="stroke-linejoin: round;" />
+        </p:Content>
+    </Shape>
+	
+	<Shape displayName="Connection Point Circle 2" id="connectionPointCircle2" icon="Icons/connectionPointCircle2.png">
+        <Properties>
+            <PropertyGroup name="Background">
+                <Property displayName="Background" name="fillColor" type="Color">#FFFFFFFF</Property>
+				<Property displayName="Border Color" name="strokeColor" type="Color">#3A686DFF</Property>
+            </PropertyGroup>
+        </Properties>
+        <Behaviors>
+            <For ref="path">
+                <Fill>$fillColor</Fill>
+				<StrokeColor>$strokeColor</StrokeColor>
+            </For>
+        </Behaviors>
+        <Actions>
+            <Action id="getSnappingGuide">
+                <Impl>return this.def.collection.buildSnappingGuides(this);</Impl>
+            </Action>
+            <Action id="getConnectorOutlets">
+                <Impl>
+                <![CDATA[
+                    var a = 5;
+                    var b = 5;
+
+                    return this.def.collection.buildConnectorOutletsWith(box, [
+                        new Outlet("top-right", "FCInput", a * Math.cos(0 - Math.PI / 4) + a, b * Math.sin( - Math.PI / 4) + b),
+                        new Outlet("top-left", "FCInput", a * Math.cos(0 - 3 * Math.PI / 4) + a, b * Math.sin(0 - 3 * Math.PI / 4) + b),
+                        new Outlet("bottom-right", "FCInput", a * Math.cos(Math.PI / 4) + a, b * Math.sin(Math.PI / 4) + b),
+                        new Outlet("bottom-left", "FCInput", a * Math.cos(3 * Math.PI / 4) + a, b * Math.sin(3 * Math.PI / 4) + b),
+                    ]);
+                ]]>
+                </Impl>
+            </Action>
+        </Actions>
+        <p:Content xmlns="http://www.w3.org/2000/svg">
+            <ellipse id="path" style="stroke-linejoin: round;" stroke-width="2.4" cx="5" cy="5" rx="5" ry="5" />
+        </p:Content>
+    </Shape>
+	
+	<Shape displayName="Connection Point Circle 3" id="connectionPointCircle3" icon="Icons/connectionPointCircle3.png">
+        <Properties>
+            <PropertyGroup name="Background">
+                <Property displayName="Background Color" name="fillColor" type="Color">#DDA00AFF</Property>
+            </PropertyGroup>
+        </Properties>
+        <Behaviors>
+            <For ref="path">
+                <Fill>$fillColor</Fill>
+            </For>
+        </Behaviors>
+        <Actions>
+            <Action id="getSnappingGuide">
+                <Impl>return this.def.collection.buildSnappingGuides(this);</Impl>
+            </Action>
+            <Action id="getConnectorOutlets">
+                <Impl>
+                <![CDATA[
+                    var a = 5;
+                    var b = 5;
+
+                    return this.def.collection.buildConnectorOutletsWith(box, [
+                        new Outlet("top-right", "FCInput", a * Math.cos(0 - Math.PI / 4) + a, b * Math.sin( - Math.PI / 4) + b),
+                        new Outlet("top-left", "FCInput", a * Math.cos(0 - 3 * Math.PI / 4) + a, b * Math.sin(0 - 3 * Math.PI / 4) + b),
+                        new Outlet("bottom-right", "FCInput", a * Math.cos(Math.PI / 4) + a, b * Math.sin(Math.PI / 4) + b),
+                        new Outlet("bottom-left", "FCInput", a * Math.cos(3 * Math.PI / 4) + a, b * Math.sin(3 * Math.PI / 4) + b),
+                    ]);
+                ]]>
+                </Impl>
+            </Action>
+        </Actions>
+        <p:Content xmlns="http://www.w3.org/2000/svg">
+			<ellipse id="path" style="stroke-linejoin: round;" cx="6.5" cy="6.5" rx="6.5" ry="6.5" />
+        </p:Content>
+    </Shape>
+</Shapes>
